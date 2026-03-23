@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TopicStatus {
+  DRAFT    @map("draft")
+  ACTIVE   @map("active")
+  ARCHIVED @map("archived")
+}
+
+enum AgentRole {
+  LEAD       @map("lead")
+  ASSISTANT  @map("assistant")
+  RESEARCHER @map("researcher")
+  CRITIC     @map("critic")
+}
+
+enum SenderType {
+  HUMAN  @map("human")
+  AGENT  @map("agent")
+  SYSTEM @map("system")
+}
+
+enum RunStatus {
+  QUEUED        @map("queued")
+  RUNNING       @map("running")
+  WAITING_HUMAN @map("waiting_human")
+  COMPLETED     @map("completed")
+  FAILED        @map("failed")
+  CANCELLED     @map("cancelled")
+}
+
+enum MessageStatus {
+  PENDING   @map("pending")
+  STREAMING @map("streaming")
+  COMPLETED @map("completed")
+  FAILED    @map("failed")
+}
+
+enum RunStepStatus {
+  PENDING   @map("pending")
+  RUNNING   @map("running")
+  COMPLETED @map("completed")
+  FAILED    @map("failed")
+  CANCELLED @map("cancelled")
+}
+
+model Topic {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @map("user_id")
+  title          String
+  status         TopicStatus @default(DRAFT)
+  sharedModel    String      @map("shared_model")
+  firstMessageAt DateTime?   @map("first_message_at")
+  nextSequenceNo Int         @default(1) @map("next_sequence_no")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  agents         TopicAgent[]
+  messages       Message[]
+  runs           Run[]
+
+  @@index([userId, status], map: "topics_user_id_status_idx")
+  @@map("topics")
+}
+
+model TopicAgent {
+  id             String     @id @default(uuid()) @db.Uuid
+  topicId        String     @map("topic_id") @db.Uuid
+  name           String
+  nameNormalized String     @map("name_normalized")
+  role           AgentRole
+  description    String
+  sortOrder      Int        @map("sort_order")
+  isEnabled      Boolean    @default(true) @map("is_enabled")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  topic          Topic      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  messages       Message[]
+  runSteps       RunStep[]
+
+  @@unique([topicId, nameNormalized], map: "topic_agents_topic_id_name_normalized_key")
+  @@index([topicId, sortOrder], map: "topic_agents_topic_id_sort_order_idx")
+  @@map("topic_agents")
+}
+
+model Message {
+  id              String        @id @default(uuid()) @db.Uuid
+  topicId         String        @map("topic_id") @db.Uuid
+  runId           String?       @map("run_id") @db.Uuid
+  clientRequestId String?       @map("client_request_id")
+  senderType      SenderType    @map("sender_type")
+  senderAgentId   String?       @map("sender_agent_id") @db.Uuid
+  senderName      String        @map("sender_name")
+  contentMarkdown String        @db.Text @map("content_markdown")
+  mentionsJson    Json?         @map("mentions_json")
+  status          MessageStatus @default(COMPLETED)
+  sequenceNo      Int           @map("sequence_no")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  topic           Topic         @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  run             Run?          @relation(fields: [runId], references: [id], onDelete: SetNull)
+  senderAgent     TopicAgent?   @relation(fields: [senderAgentId], references: [id], onDelete: SetNull)
+  triggeredRuns   Run[]         @relation("TriggerMessage")
+  step            RunStep?
+
+  @@unique([topicId, clientRequestId], map: "messages_topic_id_client_request_id_key")
+  @@unique([topicId, sequenceNo], map: "messages_topic_id_sequence_no_key")
+  @@index([topicId, sequenceNo], map: "messages_topic_id_sequence_no_idx")
+  @@index([runId], map: "messages_run_id_idx")
+  @@map("messages")
+}
+
+model Run {
+  id                String      @id @default(uuid()) @db.Uuid
+  topicId           String      @map("topic_id") @db.Uuid
+  triggerMessageId  String      @unique(map: "runs_trigger_message_id_key") @map("trigger_message_id") @db.Uuid
+  status            RunStatus   @default(QUEUED)
+  startedAt         DateTime?   @map("started_at")
+  finishedAt        DateTime?   @map("finished_at")
+  stopReason        String?     @map("stop_reason")
+  errorMessage      String?     @db.Text @map("error_message")
+  totalInputTokens  Int         @default(0) @map("total_input_tokens")
+  totalOutputTokens Int         @default(0) @map("total_output_tokens")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  topic             Topic       @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  triggerMessage    Message     @relation("TriggerMessage", fields: [triggerMessageId], references: [id], onDelete: Restrict)
+  messages          Message[]
+  steps             RunStep[]
+
+  @@index([topicId, status], map: "runs_topic_id_status_idx")
+  @@index([topicId, createdAt], map: "runs_topic_id_created_at_idx")
+  @@map("runs")
+}
+
+model RunStep {
+  id               String        @id @default(uuid()) @db.Uuid
+  runId            String        @map("run_id") @db.Uuid
+  stepIndex        Int           @map("step_index")
+  agentId          String?       @map("agent_id") @db.Uuid
+  actionType       String        @default("agent_response") @map("action_type")
+  status           RunStepStatus @default(PENDING)
+  model            String
+  latencyMs        Int?          @map("latency_ms")
+  inputTokens      Int           @default(0) @map("input_tokens")
+  outputTokens     Int           @default(0) @map("output_tokens")
+  promptSnapshot   Json          @map("prompt_snapshot")
+  responseSnapshot Json?         @map("response_snapshot")
+  stopReason       String?       @map("stop_reason")
+  messageId        String?       @unique(map: "run_steps_message_id_key") @map("message_id") @db.Uuid
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  run              Run           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  agent            TopicAgent?   @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  message          Message?      @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([runId, stepIndex], map: "run_steps_run_id_step_index_idx")
+  @@index([agentId], map: "run_steps_agent_id_idx")
+  @@map("run_steps")
+}

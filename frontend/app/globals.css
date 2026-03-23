@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-ink: 232 240 245;
+  --color-line: 99 119 132;
+  --color-shell: 10 17 23;
+  --color-panel: 18 28 37;
+  --color-mist: 155 176 190;
+  --color-accent: 241 108 59;
+  --color-success: 74 176 129;
+  --color-warning: 220 162 65;
+  --color-danger: 224 92 92;
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-plex-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: rgb(var(--color-ink));
+  font-family: var(--font-body), sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(241, 108, 59, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(92, 146, 224, 0.14), transparent 22%),
+    linear-gradient(180deg, #071018 0%, #0a1117 54%, #081016 100%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(241, 108, 59, 0.35);
+}
