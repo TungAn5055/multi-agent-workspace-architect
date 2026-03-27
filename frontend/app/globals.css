@@ -12,8 +12,8 @@
   --color-success: 74 176 129;
   --color-warning: 220 162 65;
   --color-danger: 224 92 92;
-  --font-display: var(--font-space-grotesk);
-  --font-body: var(--font-plex-sans);
+  --font-display: var(--font-funnel-sans);
+  --font-body: var(--font-funnel-sans);
 }
 
 * {

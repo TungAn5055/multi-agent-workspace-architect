@@ -13,7 +13,7 @@ export function TopicListPage() {
   return (
     <SiteShell
       title="Danh sách topic"
-      subtitle="Mỗi topic là một workspace độc lập để Human cấu hình đội agent, khởi động bằng message đầu tiên và theo dõi toàn bộ thảo luận theo thời gian thực."
+      subtitle="Mỗi topic là một workspace độc lập để Human cấu hình đội agent."
     >
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>

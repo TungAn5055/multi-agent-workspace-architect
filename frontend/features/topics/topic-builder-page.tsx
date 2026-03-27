@@ -106,9 +106,6 @@ export function TopicBuilderPage() {
           <Card className="p-6">
             <p className="text-xs uppercase tracking-[0.22em] text-mist">Meta topic</p>
             <h2 className="mt-3 font-display text-3xl font-semibold text-ink">Định nghĩa bối cảnh làm việc</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-mist">
-              Title nên phản ánh mục tiêu Human thật sự muốn cả đội agent cùng giải quyết. Mỗi topic dùng chung một model và prompt agent sẽ bị khóa sau khi có history.
-            </p>
 
             <div className="mt-6 space-y-2">
               <label className="text-sm font-medium text-ink">Title topic</label>
@@ -173,7 +170,7 @@ export function TopicBuilderPage() {
                   )
                 }
               >
-                Thêm card
+                Thêm Agent
               </Button>
             </div>
 

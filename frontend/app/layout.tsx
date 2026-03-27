@@ -1,20 +1,14 @@
 import type { Metadata } from 'next';
-import { IBM_Plex_Sans, Space_Grotesk } from 'next/font/google';
+import { Funnel_Sans } from 'next/font/google';
 
 import '@/app/globals.css';
 
 import { Providers } from '@/app/providers';
 
-const bodyFont = IBM_Plex_Sans({
-  subsets: ['latin', 'vietnamese'],
-  variable: '--font-plex-sans',
+const appFont = Funnel_Sans({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-funnel-sans',
   weight: ['400', '500', '600', '700'],
-});
-
-const displayFont = Space_Grotesk({
-  subsets: ['latin', 'vietnamese'],
-  variable: '--font-space-grotesk',
-  weight: ['500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -25,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
-      <body className={`${bodyFont.variable} ${displayFont.variable}`}>
+      <body className={`${appFont.className} ${appFont.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>
