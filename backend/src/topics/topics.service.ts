@@ -5,11 +5,15 @@ import { OwnershipService } from 'src/auth/ownership.service';
 import { MIN_TOPIC_AGENTS } from 'src/common/constants/app.constants';
 import { AppException } from 'src/common/exceptions/app.exception';
 import { ERROR_CODES } from 'src/common/exceptions/error-codes';
+import { ManagedLlmProvider } from 'src/config/app.config';
 import { AppConfigService } from 'src/config/app-config.service';
-import { mapAgentRole, mapRunStatus, mapTopicStatus } from 'src/topics/topics.mapper';
+import { mapAgentRole, mapLlmProvider, mapRunStatus, mapTopicStatus } from 'src/topics/topics.mapper';
 import { CreateTopicDto } from 'src/topics/dto/create-topic.dto';
 import { UpdateTopicTitleDto } from 'src/topics/dto/update-topic-title.dto';
-import { TopicsRepository } from 'src/topics/topics.repository';
+import {
+  OwnedTopicDetailRecord,
+  TopicsRepository,
+} from 'src/topics/topics.repository';
 
 @Injectable()
 export class TopicsService {
@@ -37,10 +41,15 @@ export class TopicsService {
       });
     }
 
+    const sharedProvider = this.appConfig.resolveManagedProvider(payload.provider, payload.model);
+    const sharedModel = this.appConfig.resolveLlmModel(sharedProvider, payload.model);
+    this.assertAgentModelOverrides(payload, sharedProvider);
+
     const topic = await this.topicsRepository.createTopic(
       userId,
       payload,
-      this.appConfig.resolveLlmModel(payload.model),
+      sharedProvider,
+      sharedModel,
     );
 
     return this.mapTopicDetail(topic, false);
@@ -53,7 +62,8 @@ export class TopicsService {
       id: topic.id,
       title: topic.title,
       status: mapTopicStatus(topic.status),
-      sharedModel: this.appConfig.resolveLlmModel(topic.sharedModel),
+      sharedProvider: mapLlmProvider(topic.sharedProvider),
+      sharedModel: this.appConfig.resolveLlmModel(mapLlmProvider(topic.sharedProvider), topic.sharedModel),
       agentCount: topic._count.agents,
       hasHistory: topic._count.messages > 0,
       latestRunStatus: topic.runs[0] ? mapRunStatus(topic.runs[0].status) : null,
@@ -113,33 +123,18 @@ export class TopicsService {
   }
 
   private mapTopicDetail(
-    topic: {
-      id: string;
-      title: string;
-      status: TopicStatus;
-      sharedModel: string;
-      createdAt: Date;
-      updatedAt: Date;
-      firstMessageAt: Date | null;
-      agents: Array<{
-        id: string;
-        name: string;
-        role: Parameters<typeof mapAgentRole>[0];
-        description: string;
-        sortOrder: number;
-        isEnabled: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-      }>;
-      runs?: Array<{ id: string; status: Parameters<typeof mapRunStatus>[0]; createdAt: Date }>;
-    },
+    topic: OwnedTopicDetailRecord,
     hasHistory: boolean,
   ) {
     return {
       id: topic.id,
       title: topic.title,
       status: mapTopicStatus(topic.status),
-      sharedModel: this.appConfig.resolveLlmModel(topic.sharedModel),
+      sharedProvider: mapLlmProvider(topic.sharedProvider),
+      sharedModel: this.appConfig.resolveLlmModel(
+        mapLlmProvider(topic.sharedProvider),
+        topic.sharedModel,
+      ),
       hasHistory,
       firstMessageAt: topic.firstMessageAt?.toISOString() ?? null,
       createdAt: topic.createdAt.toISOString(),
@@ -155,6 +150,8 @@ export class TopicsService {
         id: agent.id,
         name: agent.name,
         role: mapAgentRole(agent.role),
+        provider: agent.provider ? mapLlmProvider(agent.provider) : null,
+        model: agent.model ?? null,
         description: agent.description,
         sortOrder: agent.sortOrder,
         isEnabled: agent.isEnabled,
@@ -162,5 +159,26 @@ export class TopicsService {
         updatedAt: agent.updatedAt.toISOString(),
       })),
     };
+  }
+
+  private assertAgentModelOverrides(payload: CreateTopicDto, sharedProvider: ManagedLlmProvider) {
+    for (const agent of payload.agents) {
+      if (agent.provider && !agent.model) {
+        throw new AppException({
+          status: 400,
+          code: ERROR_CODES.validationFailed,
+          message: `Agent ${agent.name.trim()} đã chọn provider override nên phải chọn model tương ứng.`,
+        });
+      }
+
+      if (!agent.provider && !agent.model) {
+        continue;
+      }
+
+      const effectiveProvider = agent.provider
+        ? this.appConfig.resolveManagedProvider(agent.provider, agent.model)
+        : sharedProvider;
+      this.appConfig.resolveLlmModel(effectiveProvider, agent.model);
+    }
   }
 }

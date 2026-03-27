@@ -10,6 +10,7 @@ describe('PromptBuilderService', () => {
     const leadPrompt = service.buildPrompt({
       topic: {
         title: 'Topic A',
+        sharedProvider: 'openrouter',
         sharedModel: 'gpt-5',
       },
       agent: {
@@ -17,6 +18,10 @@ describe('PromptBuilderService', () => {
         name: 'Lan',
         role: AgentRole.LEAD,
         description: 'Lead',
+      },
+      execution: {
+        provider: 'openrouter',
+        model: 'gpt-5',
       },
       latestHumanMessage: 'Cho tôi phương án khả thi.',
       recentMessages: [],
@@ -27,6 +32,7 @@ describe('PromptBuilderService', () => {
     const assistantPrompt = service.buildPrompt({
       topic: {
         title: 'Topic A',
+        sharedProvider: 'openrouter',
         sharedModel: 'gpt-5',
       },
       agent: {
@@ -34,6 +40,10 @@ describe('PromptBuilderService', () => {
         name: 'Minh',
         role: AgentRole.ASSISTANT,
         description: 'Assistant',
+      },
+      execution: {
+        provider: 'openrouter',
+        model: 'gpt-5',
       },
       latestHumanMessage: 'Cho tôi phương án khả thi.',
       recentMessages: [],

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Divider } from '@/components/ui/divider';
 import { RunStatusBadge } from '@/components/ui/run-status-badge';
+import { getProviderLabel } from '@/lib/constants';
 import { formatRelativeDate } from '@/lib/format';
 import { TopicDetail } from '@/types/topic';
 
@@ -28,7 +29,8 @@ export function TopicSidebar({
           <RunStatusBadge status={topic.activeRun?.status ?? null} />
         </div>
         <p className="mt-4 text-sm leading-6 text-mist">
-          Topic dùng model chung <span className="font-medium text-ink">{topic.sharedModel}</span> và chỉ bắt đầu chạy sau message đầu tiên của Human.
+          Topic mặc định dùng <span className="font-medium text-ink">{getProviderLabel(topic.sharedProvider)}</span> với model{' '}
+          <span className="font-medium text-ink">{topic.sharedModel}</span> và chỉ bắt đầu chạy sau message đầu tiên của Human.
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
@@ -76,8 +78,13 @@ export function TopicSidebar({
               <div className="flex items-center gap-2">
                 <p className="font-medium text-ink">{agent.name}</p>
                 {agent.role === 'lead' ? <Badge tone="accent">Lead</Badge> : null}
+                {agent.provider || agent.model ? <Badge tone="default">Override</Badge> : null}
               </div>
               <p className="mt-2 text-xs uppercase tracking-[0.18em] text-mist">{agent.role}</p>
+              <p className="mt-2 text-xs text-mist">
+                {agent.provider ? getProviderLabel(agent.provider) : getProviderLabel(topic.sharedProvider)} ·{' '}
+                {agent.model ?? topic.sharedModel}
+              </p>
               <p className="mt-3 text-sm leading-6 text-mist">{agent.description}</p>
             </div>
           ))}

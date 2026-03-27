@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { Card } from '@/components/ui/card';
 import { RunStatusBadge } from '@/components/ui/run-status-badge';
+import { getProviderLabel } from '@/lib/constants';
 import { formatRelativeDate } from '@/lib/format';
 import { TopicSummary } from '@/types/topic';
 
@@ -13,7 +14,7 @@ export function TopicListCard({ topic }: { topic: TopicSummary }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-mist">
-              {topic.agentCount} agent · model {topic.sharedModel}
+              {topic.agentCount} agent · {getProviderLabel(topic.sharedProvider)} · {topic.sharedModel}
             </p>
             <h2 className="mt-2 font-display text-2xl font-semibold text-ink group-hover:text-white">
               {topic.title}

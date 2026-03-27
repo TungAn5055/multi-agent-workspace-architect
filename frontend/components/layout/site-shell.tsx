@@ -28,6 +28,9 @@ export function SiteShell({
           <Link href="/topics/new" className="rounded-full px-3 py-2 hover:bg-white/5 hover:text-ink">
             Tạo topic
           </Link>
+          <Link href="/settings/llm" className="rounded-full px-3 py-2 hover:bg-white/5 hover:text-ink">
+            LLM Settings
+          </Link>
           <Link href="/health" className="rounded-full px-3 py-2 hover:bg-white/5 hover:text-ink">
             Health
           </Link>

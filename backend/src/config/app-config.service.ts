@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { LlmProvider } from 'src/config/app.config';
+import { LlmProvider, ManagedLlmProvider } from 'src/config/app.config';
 
 @Injectable()
 export class AppConfigService {
@@ -29,6 +29,10 @@ export class AppConfigService {
 
   get sseHeartbeatMs(): number {
     return this.getOrThrow<number>('app.sseHeartbeatMs');
+  }
+
+  get llmCredentialsSecret(): string {
+    return this.configService.get<string>('app.llmCredentialsSecret') ?? '';
   }
 
   get databaseUrl(): string {
@@ -71,6 +75,42 @@ export class AppConfigService {
     return this.configService.get<string>('app.llmAppName') ?? '';
   }
 
+  get openaiApiKey(): string {
+    return this.configService.get<string>('app.openaiApiKey') ?? '';
+  }
+
+  get openaiBaseUrl(): string {
+    return this.configService.get<string>('app.openaiBaseUrl') ?? '';
+  }
+
+  get openaiModel(): string {
+    return this.configService.get<string>('app.openaiModel') ?? 'gpt-5';
+  }
+
+  get anthropicApiKey(): string {
+    return this.configService.get<string>('app.anthropicApiKey') ?? '';
+  }
+
+  get anthropicBaseUrl(): string {
+    return this.configService.get<string>('app.anthropicBaseUrl') ?? 'https://api.anthropic.com/v1';
+  }
+
+  get anthropicModel(): string {
+    return this.configService.get<string>('app.anthropicModel') ?? 'claude-sonnet-4-5';
+  }
+
+  get openrouterApiKey(): string {
+    return this.configService.get<string>('app.openrouterApiKey') ?? '';
+  }
+
+  get openrouterBaseUrl(): string {
+    return this.configService.get<string>('app.openrouterBaseUrl') ?? '';
+  }
+
+  get openrouterModel(): string {
+    return this.configService.get<string>('app.openrouterModel') ?? '';
+  }
+
   get orchestratorMaxParticipants(): number {
     return this.getOrThrow<number>('app.orchestratorMaxParticipants');
   }
@@ -83,38 +123,89 @@ export class AppConfigService {
     return this.getOrThrow<number>('app.queueRunAttempts');
   }
 
-  resolveLlmModel(model?: string | null): string {
-    const requestedModel = model?.trim();
-    if (this.llmModelOverride) {
-      return this.llmModel;
+  get defaultManagedLlmProvider(): ManagedLlmProvider {
+    return this.llmProvider === 'nvidia' ? 'openrouter' : this.llmProvider;
+  }
+
+  isManagedLlmProvider(value: string | null | undefined): value is ManagedLlmProvider {
+    return value === 'anthropic' || value === 'openai' || value === 'openrouter';
+  }
+
+  resolveManagedProvider(provider?: string | null, model?: string | null): ManagedLlmProvider {
+    if (this.isManagedLlmProvider(provider)) {
+      return provider;
     }
 
-    const configuredBaseModel = this.stripModelVariant(this.llmModel);
+    const normalizedModel = model?.trim().toLocaleLowerCase('en-US') ?? '';
+    if (!normalizedModel) {
+      return this.defaultManagedLlmProvider;
+    }
 
-    if (this.llmProvider === 'nvidia') {
+    if (normalizedModel.startsWith('claude') || normalizedModel.startsWith('anthropic/')) {
+      return 'anthropic';
+    }
+
+    if (normalizedModel.endsWith(':free') || normalizedModel.includes('/')) {
+      return 'openrouter';
+    }
+
+    if (normalizedModel.startsWith('gpt') || normalizedModel.startsWith('o1') || normalizedModel.startsWith('o3')) {
+      return 'openai';
+    }
+
+    return this.defaultManagedLlmProvider;
+  }
+
+  resolveLlmModel(provider: ManagedLlmProvider | LlmProvider, model?: string | null): string {
+    const requestedModel = model?.trim();
+    if (provider === 'anthropic') {
+      return requestedModel || this.anthropicModel;
+    }
+
+    if (provider === 'openrouter') {
+      return requestedModel || this.openrouterModel || this.llmModel;
+    }
+
+    if (provider === 'nvidia') {
       if (requestedModel?.startsWith('nvidia/')) {
         return requestedModel;
       }
-      return this.llmModel;
+      return requestedModel || this.llmModel;
     }
 
-    if (this.llmProvider === 'openrouter') {
-      if (!requestedModel || !requestedModel.includes('/')) {
-        return this.llmModel;
-      }
-
-      if (this.stripModelVariant(requestedModel) === configuredBaseModel) {
-        return this.llmModel;
-      }
-
-      return requestedModel;
-    }
-
-    return requestedModel || this.llmModel;
+    return requestedModel || this.openaiModel || this.llmModel;
   }
 
-  private stripModelVariant(model: string): string {
-    return model.split(':', 1)[0] ?? model;
+  resolveProviderBaseUrl(provider: ManagedLlmProvider | LlmProvider): string {
+    if (provider === 'anthropic') {
+      return this.anthropicBaseUrl;
+    }
+
+    if (provider === 'openrouter') {
+      return this.openrouterBaseUrl || this.llmBaseUrl;
+    }
+
+    if (provider === 'nvidia') {
+      return this.llmBaseUrl;
+    }
+
+    return this.openaiBaseUrl;
+  }
+
+  resolveProviderEnvApiKey(provider: ManagedLlmProvider | LlmProvider): string {
+    if (provider === 'anthropic') {
+      return this.anthropicApiKey || (this.llmProvider === 'anthropic' ? this.llmApiKey : '');
+    }
+
+    if (provider === 'openrouter') {
+      return this.openrouterApiKey || (this.llmProvider === 'openrouter' ? this.llmApiKey : '');
+    }
+
+    if (provider === 'nvidia') {
+      return this.llmProvider === 'nvidia' ? this.llmApiKey : '';
+    }
+
+    return this.openaiApiKey || (this.llmProvider === 'openai' ? this.llmApiKey : '');
   }
 
   private getOrThrow<T>(key: string): T {

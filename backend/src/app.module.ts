@@ -10,6 +10,7 @@ import { ObservabilityModule } from 'src/observability/observability.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { TopicsModule } from 'src/topics/topics.module';
 import { AgentsModule } from 'src/agents/agents.module';
+import { LlmModule } from 'src/llm/llm.module';
 import { MessagesModule } from 'src/messages/messages.module';
 import { RunsModule } from 'src/runs/runs.module';
 import { StreamModule } from 'src/stream/stream.module';
@@ -31,6 +32,7 @@ import { OrchestratorModule } from 'src/orchestrator/orchestrator.module';
     AuthModule,
     ObservabilityModule,
     HealthModule,
+    LlmModule,
     TopicsModule,
     AgentsModule,
     MessagesModule,

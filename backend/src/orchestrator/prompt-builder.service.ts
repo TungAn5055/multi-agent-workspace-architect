@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AgentRole } from '@prisma/client';
 
 import { WAITING_HUMAN_MARKER } from 'src/common/constants/app.constants';
+import { ManagedLlmProvider } from 'src/config/app.config';
 import { PromptPayload } from 'src/orchestrator/orchestrator.types';
 
 interface PromptAgent {
@@ -20,8 +21,9 @@ interface PromptMessage {
 @Injectable()
 export class PromptBuilderService {
   buildPrompt(input: {
-    topic: { title: string; sharedModel: string };
+    topic: { title: string; sharedProvider: ManagedLlmProvider; sharedModel: string };
     agent: PromptAgent;
+    execution: { provider: ManagedLlmProvider; model: string };
     latestHumanMessage: string;
     recentMessages: PromptMessage[];
     previousStepOutputs: Array<{ agentName: string; contentMarkdown: string }>;
@@ -53,9 +55,12 @@ export class PromptBuilderService {
 
     const prompt = [
       `Topic: ${input.topic.title}`,
-      `Model chung cho topic: ${input.topic.sharedModel}`,
+      `Provider mặc định của topic: ${input.topic.sharedProvider}`,
+      `Model mặc định của topic: ${input.topic.sharedModel}`,
       `Vai trò agent hiện tại: ${input.agent.name} (${input.agent.role.toLocaleLowerCase('en-US')})`,
       `Mô tả nhiệm vụ agent: ${input.agent.description}`,
+      `Provider hiệu lực của agent: ${input.execution.provider}`,
+      `Model hiệu lực của agent: ${input.execution.model}`,
       `Mục tiêu step hiện tại: ${input.stepGoal}`,
       'Luật bắt buộc:',
       '- Chỉ Lead mới được hỏi lại Human.',
@@ -64,7 +69,9 @@ export class PromptBuilderService {
       '- Nếu nhắc lại ý cũ, phải thêm góc nhìn mới hoặc phản biện rõ ràng.',
       `Latest human message:\n${input.latestHumanMessage.trim()}`,
       history ? `Recent history:\n${history}` : 'Recent history: chưa có.',
-      currentRunOutputs ? `Các phát biểu trước đó trong run này:\n${currentRunOutputs}` : 'Trong run này bạn là người phát biểu đầu tiên.',
+      currentRunOutputs
+        ? `Các phát biểu trước đó trong run này:\n${currentRunOutputs}`
+        : 'Trong run này bạn là người phát biểu đầu tiên.',
       'Đầu ra cần tạo: markdown rõ ràng, súc tích, có cấu trúc nếu phù hợp.',
     ].join('\n\n');
 

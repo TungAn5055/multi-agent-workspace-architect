@@ -13,6 +13,7 @@ export default function HealthPage() {
     queryKey: ['health'],
     queryFn: api.getHealth,
   });
+  const health = healthQuery.data;
 
   return (
     <SiteShell
@@ -29,23 +30,28 @@ export default function HealthPage() {
             <p className="text-sm text-danger">Không thể gọi backend health endpoint.</p>
             <Button onClick={() => healthQuery.refetch()}>Thử lại</Button>
           </div>
+        ) : !health ? (
+          <div className="space-y-4">
+            <p className="text-sm text-mist">Chưa có dữ liệu health.</p>
+            <Button onClick={() => healthQuery.refetch()}>Tải lại</Button>
+          </div>
         ) : (
           <dl className="grid gap-4 sm:grid-cols-2">
             <div>
               <dt className="text-xs uppercase tracking-[0.22em] text-mist">Status</dt>
-              <dd className="mt-2 text-lg font-semibold text-ink">{healthQuery.data.status}</dd>
+              <dd className="mt-2 text-lg font-semibold text-ink">{health.status}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-[0.22em] text-mist">Database</dt>
-              <dd className="mt-2 text-lg font-semibold text-ink">{healthQuery.data.database}</dd>
+              <dd className="mt-2 text-lg font-semibold text-ink">{health.database}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-[0.22em] text-mist">Redis</dt>
-              <dd className="mt-2 text-lg font-semibold text-ink">{healthQuery.data.redis}</dd>
+              <dd className="mt-2 text-lg font-semibold text-ink">{health.redis}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-[0.22em] text-mist">Timestamp</dt>
-              <dd className="mt-2 text-lg font-semibold text-ink">{healthQuery.data.timestamp}</dd>
+              <dd className="mt-2 text-lg font-semibold text-ink">{health.timestamp}</dd>
             </div>
           </dl>
         )}

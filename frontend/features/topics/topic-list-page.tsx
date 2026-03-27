@@ -13,12 +13,10 @@ export function TopicListPage() {
   return (
     <SiteShell
       title="Danh sách topic"
-      subtitle="Mỗi topic là một workspace độc lập để Human cấu hình đội agent."
+      subtitle="Mỗi topic là một workspace độc lập để Human cấu hình đội agent, provider và model routing."
     >
       <div className="mb-6 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-mist">Backend hiện bám rule MVP: chỉ một run active, prompt khóa sau history và V1 chỉ dùng tiếng Việt.</p>
-        </div>
+        <div></div>
         <Button href="/topics/new">Tạo topic mới</Button>
       </div>
 

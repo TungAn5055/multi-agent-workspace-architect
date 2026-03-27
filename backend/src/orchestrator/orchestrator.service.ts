@@ -5,7 +5,9 @@ import { AgentRole, MessageStatus, RunStatus, SenderType } from '@prisma/client'
 import { WAITING_HUMAN_MARKER } from 'src/common/constants/app.constants';
 import { AppException } from 'src/common/exceptions/app.exception';
 import { detectMentions } from 'src/common/utils/mentions';
+import { ManagedLlmProvider } from 'src/config/app.config';
 import { AppConfigService } from 'src/config/app-config.service';
+import { LlmCredentialsService } from 'src/llm/llm-credentials.service';
 import { LlmGatewayService } from 'src/llm-gateway/llm-gateway.service';
 import { MessagesRepository } from 'src/messages/messages.repository';
 import { ObservabilityService } from 'src/observability/observability.service';
@@ -15,6 +17,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { RunExecutionRegistryService } from 'src/runs/run-execution-registry.service';
 import { RunsRepository } from 'src/runs/runs.repository';
 import { StreamService } from 'src/stream/stream.service';
+import { mapLlmProvider } from 'src/topics/topics.mapper';
 import { TopicsRepository } from 'src/topics/topics.repository';
 
 interface RunJobPayload {
@@ -36,6 +39,7 @@ export class OrchestratorService {
     private readonly participantSelector: ParticipantSelectorService,
     private readonly promptBuilder: PromptBuilderService,
     private readonly llmGateway: LlmGatewayService,
+    private readonly llmCredentials: LlmCredentialsService,
     private readonly appConfig: AppConfigService,
     private readonly observability: ObservabilityService,
     private readonly executionRegistry: RunExecutionRegistryService,
@@ -78,8 +82,12 @@ export class OrchestratorService {
       topic.agents,
     );
 
+    const resolvedSharedProvider = mapLlmProvider(topic.sharedProvider);
+    const resolvedSharedModel = this.appConfig.resolveLlmModel(
+      resolvedSharedProvider,
+      topic.sharedModel,
+    );
     const previousStepOutputs: Array<{ agentName: string; contentMarkdown: string }> = [];
-    const resolvedSharedModel = this.appConfig.resolveLlmModel(topic.sharedModel);
 
     for (const [stepIndex, participant] of participants.entries()) {
       const currentRun = await this.runsRepository.findTopicRun(topicId, runId);
@@ -92,12 +100,26 @@ export class OrchestratorService {
         continue;
       }
 
+      const effectiveProvider = (agent.provider
+        ? mapLlmProvider(agent.provider)
+        : resolvedSharedProvider) as ManagedLlmProvider;
+      const effectiveModel = this.appConfig.resolveLlmModel(
+        effectiveProvider,
+        agent.model ?? topic.sharedModel,
+      );
+      const credential = await this.llmCredentials.resolveCredential(topic.userId, effectiveProvider);
+
       const promptPayload = this.promptBuilder.buildPrompt({
         topic: {
           title: topic.title,
+          sharedProvider: resolvedSharedProvider,
           sharedModel: resolvedSharedModel,
         },
         agent,
+        execution: {
+          provider: effectiveProvider,
+          model: effectiveModel,
+        },
         latestHumanMessage: triggerMessage?.contentMarkdown ?? '',
         recentMessages: recentMessages.map((message) => ({
           senderName: message.senderName,
@@ -125,7 +147,7 @@ export class OrchestratorService {
           runId,
           stepIndex,
           agentId: agent.id,
-          model: resolvedSharedModel,
+          model: effectiveModel,
           promptSnapshot: promptPayload,
           messageId: messageRecord.id,
         });
@@ -145,6 +167,8 @@ export class OrchestratorService {
         stepId: step.id,
         agentId: agent.id,
         agentName: agent.name,
+        provider: effectiveProvider,
+        model: effectiveModel,
         messageId: message.id,
         sequenceNo: message.sequenceNo,
       });
@@ -155,7 +179,10 @@ export class OrchestratorService {
 
       try {
         const reply = await this.llmGateway.streamAgentReply({
-          model: resolvedSharedModel,
+          provider: effectiveProvider,
+          apiKey: credential.apiKey,
+          baseUrl: this.appConfig.resolveProviderBaseUrl(effectiveProvider),
+          model: effectiveModel,
           instructions: promptPayload.instructions,
           prompt: promptPayload.prompt,
           signal: abortController.signal,
@@ -199,6 +226,8 @@ export class OrchestratorService {
           stepId: step.id,
           agentId: agent.id,
           agentName: agent.name,
+          provider: effectiveProvider,
+          model: effectiveModel,
           messageId: message.id,
           contentMarkdown: reply.content,
           inputTokens: reply.inputTokens,

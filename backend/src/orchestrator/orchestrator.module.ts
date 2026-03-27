@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 
 import { AgentsModule } from 'src/agents/agents.module';
 import { RUNS_QUEUE } from 'src/common/constants/app.constants';
+import { LlmModule } from 'src/llm/llm.module';
 import { LlmGatewayModule } from 'src/llm-gateway/llm-gateway.module';
 import { MessagesModule } from 'src/messages/messages.module';
 import { ObservabilityModule } from 'src/observability/observability.module';
@@ -24,6 +25,7 @@ import { TopicsModule } from 'src/topics/topics.module';
     MessagesModule,
     RunsModule,
     StreamModule,
+    LlmModule,
     LlmGatewayModule,
     ObservabilityModule,
   ],

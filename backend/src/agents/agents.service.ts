@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { AppException } from 'src/common/exceptions/app.exception';
 import { ERROR_CODES } from 'src/common/exceptions/error-codes';
-import { mapAgentRole } from 'src/topics/topics.mapper';
+import { mapAgentRole, mapLlmProvider } from 'src/topics/topics.mapper';
 import { TopicsService } from 'src/topics/topics.service';
 import { TopicsRepository } from 'src/topics/topics.repository';
 import { AddAgentDto } from 'src/agents/dto/add-agent.dto';
@@ -22,6 +22,7 @@ export class AgentsService {
 
   async addAgent(topicId: string, userId: string, payload: AddAgentDto) {
     await this.assertTopicCanMutateAgents(topicId, userId);
+    this.assertProviderModelOverride(payload);
 
     if (await this.agentsRepository.hasDuplicateName(topicId, payload.name)) {
       throw new AppException({
@@ -45,6 +46,8 @@ export class AgentsService {
         message: 'Không tìm thấy agent.',
       });
     }
+
+    this.assertProviderModelOverride(payload);
 
     if (payload.name && (await this.agentsRepository.hasDuplicateName(topicId, payload.name, agentId))) {
       throw new AppException({
@@ -126,6 +129,8 @@ export class AgentsService {
     id: string;
     name: string;
     role: Parameters<typeof mapAgentRole>[0];
+    provider: Parameters<typeof mapLlmProvider>[0] | null;
+    model: string | null;
     description: string;
     sortOrder: number;
     isEnabled: boolean;
@@ -136,11 +141,23 @@ export class AgentsService {
       id: agent.id,
       name: agent.name,
       role: mapAgentRole(agent.role),
+      provider: agent.provider ? mapLlmProvider(agent.provider) : null,
+      model: agent.model ?? null,
       description: agent.description,
       sortOrder: agent.sortOrder,
       isEnabled: agent.isEnabled,
       createdAt: agent.createdAt.toISOString(),
       updatedAt: agent.updatedAt.toISOString(),
     };
+  }
+
+  private assertProviderModelOverride(payload: { provider?: string; model?: string }) {
+    if (payload.provider && !payload.model) {
+      throw new AppException({
+        status: 400,
+        code: ERROR_CODES.validationFailed,
+        message: 'Nếu chọn provider override cho agent thì phải đi kèm model.',
+      });
+    }
   }
 }

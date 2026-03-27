@@ -13,6 +13,8 @@ export const ERROR_CODES = {
   invalidAgentRole: 'INVALID_AGENT_ROLE',
   llmRequestFailed: 'LLM_REQUEST_FAILED',
   openAiRequestFailed: 'LLM_REQUEST_FAILED',
+  llmCredentialMissing: 'LLM_CREDENTIAL_MISSING',
+  llmProviderUnsupported: 'LLM_PROVIDER_UNSUPPORTED',
   internalError: 'INTERNAL_ERROR',
 } as const;
 

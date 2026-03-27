@@ -1,3 +1,5 @@
+import { ManagedLlmProvider } from '@/types/llm';
+
 export type TopicStatus = 'draft' | 'active' | 'archived';
 export type AgentRole = 'lead' | 'assistant' | 'researcher' | 'critic';
 export type RunStatus =
@@ -14,6 +16,7 @@ export interface TopicSummary {
   id: string;
   title: string;
   status: TopicStatus;
+  sharedProvider: ManagedLlmProvider;
   sharedModel: string;
   agentCount: number;
   hasHistory: boolean;
@@ -26,6 +29,8 @@ export interface TopicAgent {
   id: string;
   name: string;
   role: AgentRole;
+  provider: ManagedLlmProvider | null;
+  model: string | null;
   description: string;
   sortOrder: number;
   isEnabled: boolean;
@@ -37,6 +42,7 @@ export interface TopicDetail {
   id: string;
   title: string;
   status: TopicStatus;
+  sharedProvider: ManagedLlmProvider;
   sharedModel: string;
   hasHistory: boolean;
   firstMessageAt: string | null;
@@ -102,11 +108,14 @@ export interface RunDetail {
 
 export interface CreateTopicPayload {
   title: string;
+  provider?: ManagedLlmProvider;
   model?: string;
   agents: Array<{
     name: string;
     role: AgentRole;
     description: string;
+    provider?: ManagedLlmProvider;
+    model?: string;
     isEnabled?: boolean;
   }>;
 }
@@ -119,6 +128,8 @@ export interface AddAgentPayload {
   name: string;
   role: AgentRole;
   description: string;
+  provider?: ManagedLlmProvider;
+  model?: string;
   isEnabled?: boolean;
 }
 
@@ -159,6 +170,8 @@ export interface RunEventMap {
     stepId: string;
     agentId: string;
     agentName: string;
+    provider?: ManagedLlmProvider;
+    model?: string;
     messageId: string;
     sequenceNo: number;
   };
@@ -169,6 +182,8 @@ export interface RunEventMap {
     stepId: string;
     agentId: string;
     agentName: string;
+    provider?: ManagedLlmProvider;
+    model?: string;
     messageId: string;
     contentMarkdown: string;
     inputTokens: number;

@@ -1,9 +1,10 @@
 import { WorkspacePage } from '@/features/workspace/workspace-page';
 
-export default function TopicWorkspacePage({
+export default async function TopicWorkspacePage({
   params,
 }: {
-  params: { topicId: string };
+  params: Promise<{ topicId: string }>;
 }) {
-  return <WorkspacePage topicId={params.topicId} />;
+  const { topicId } = await params;
+  return <WorkspacePage topicId={topicId} />;
 }

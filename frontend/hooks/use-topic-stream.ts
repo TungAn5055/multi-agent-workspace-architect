@@ -13,6 +13,10 @@ function parseEvent<T>(event: MessageEvent<string>) {
   return JSON.parse(event.data) as T;
 }
 
+function asEventListener(handler: (event: MessageEvent<string>) => void | Promise<void>) {
+  return handler as unknown as EventListener;
+}
+
 export function useTopicStream(topicId: string) {
   const queryClient = useQueryClient();
   const pushToast = useToastStore((state) => state.push);
@@ -134,16 +138,16 @@ export function useTopicStream(topicId: string) {
       ]);
     };
 
-    eventSource.addEventListener('connected', onConnected as EventListener);
-    eventSource.addEventListener('run.queued', onQueued as EventListener);
-    eventSource.addEventListener('run.started', onStarted as EventListener);
-    eventSource.addEventListener('agent.started', onAgentStarted as EventListener);
-    eventSource.addEventListener('agent.delta', onAgentDelta as EventListener);
-    eventSource.addEventListener('agent.completed', onAgentCompleted as EventListener);
-    eventSource.addEventListener('run.waiting_human', onWaitingHuman as EventListener);
-    eventSource.addEventListener('run.completed', onCompleted as EventListener);
-    eventSource.addEventListener('run.failed', onFailed as EventListener);
-    eventSource.addEventListener('run.cancelled', onCancelled as EventListener);
+    eventSource.addEventListener('connected', asEventListener(onConnected));
+    eventSource.addEventListener('run.queued', asEventListener(onQueued));
+    eventSource.addEventListener('run.started', asEventListener(onStarted));
+    eventSource.addEventListener('agent.started', asEventListener(onAgentStarted));
+    eventSource.addEventListener('agent.delta', asEventListener(onAgentDelta));
+    eventSource.addEventListener('agent.completed', asEventListener(onAgentCompleted));
+    eventSource.addEventListener('run.waiting_human', asEventListener(onWaitingHuman));
+    eventSource.addEventListener('run.completed', asEventListener(onCompleted));
+    eventSource.addEventListener('run.failed', asEventListener(onFailed));
+    eventSource.addEventListener('run.cancelled', asEventListener(onCancelled));
 
     eventSource.onerror = () => {
       setConnectionStatus('reconnecting');

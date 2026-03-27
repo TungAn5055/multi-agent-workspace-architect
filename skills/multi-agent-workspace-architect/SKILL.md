@@ -95,5 +95,6 @@ Every substantial answer should:
 ## Resources
 - For locked rules and final product decisions, read `references/product-decisions.md`.
 - For the detailed technical baseline, read `references/technical-spec.md`.
+- For the current backend runtime in this repo, especially `RunsService` and `OrchestratorService`, read `references/current-backend-runtime.md`.
 - For the delivery backlog and execution breakdown, read `skill_steps_jobs.md`.
 - For the default response format, read `references/output-template.md`.

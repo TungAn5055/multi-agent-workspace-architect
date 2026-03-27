@@ -1,5 +1,11 @@
 import { ApiEnvelope, ApiError, ApiErrorPayload } from '@/types/api';
 import {
+  LlmCredentialSummary,
+  LlmProviderCatalog,
+  ManagedLlmProvider,
+  UpsertLlmCredentialPayload,
+} from '@/types/llm';
+import {
   CancelRunPayload,
   CreateRunResponse,
   CreateTopicPayload,
@@ -81,4 +87,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  getLlmCredentials: () => apiFetch<LlmCredentialSummary[]>('/llm/credentials'),
+  upsertLlmCredential: (provider: ManagedLlmProvider, payload: UpsertLlmCredentialPayload) =>
+    apiFetch<LlmCredentialSummary>(`/llm/credentials/${provider}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  deleteLlmCredential: (provider: ManagedLlmProvider) =>
+    apiFetch<{ provider: ManagedLlmProvider; deleted: boolean; fallbackSource: string; stillConfigured: boolean }>(
+      `/llm/credentials/${provider}`,
+      {
+        method: 'DELETE',
+      },
+    ),
+  getLlmCatalog: () => apiFetch<LlmProviderCatalog[]>('/llm/catalog'),
 };

@@ -20,6 +20,12 @@ enum AgentRole {
   CRITIC     @map("critic")
 }
 
+enum LlmProvider {
+  OPENAI    @map("openai")
+  ANTHROPIC @map("anthropic")
+  OPENROUTER @map("openrouter")
+}
+
 enum SenderType {
   HUMAN  @map("human")
   AGENT  @map("agent")
@@ -55,6 +61,7 @@ model Topic {
   userId         String      @map("user_id")
   title          String
   status         TopicStatus @default(DRAFT)
+  sharedProvider LlmProvider @default(OPENROUTER) @map("shared_provider")
   sharedModel    String      @map("shared_model")
   firstMessageAt DateTime?   @map("first_message_at")
   nextSequenceNo Int         @default(1) @map("next_sequence_no")
@@ -74,6 +81,8 @@ model TopicAgent {
   name           String
   nameNormalized String     @map("name_normalized")
   role           AgentRole
+  provider       LlmProvider?
+  model          String?
   description    String
   sortOrder      Int        @map("sort_order")
   isEnabled      Boolean    @default(true) @map("is_enabled")
@@ -162,4 +171,18 @@ model RunStep {
   @@index([runId, stepIndex], map: "run_steps_run_id_step_index_idx")
   @@index([agentId], map: "run_steps_agent_id_idx")
   @@map("run_steps")
+}
+
+model UserLlmCredential {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @map("user_id")
+  provider        LlmProvider
+  apiKeyEncrypted String      @db.Text @map("api_key_encrypted")
+  keyHint         String      @map("key_hint")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@unique([userId, provider], map: "user_llm_credentials_user_id_provider_key")
+  @@index([userId], map: "user_llm_credentials_user_id_idx")
+  @@map("user_llm_credentials")
 }
