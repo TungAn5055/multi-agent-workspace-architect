@@ -75,6 +75,7 @@ export function AgentFormCard({
   const credential = credentialMap.get(effectiveProvider);
   const catalog = catalogMap.get(effectiveProvider);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [routingPreviewOpen, setRoutingPreviewOpen] = useState(false);
 
   function applyModelSelection(nextModel: string) {
     setValue(`agents.${index}.model`, nextModel, {
@@ -102,9 +103,6 @@ export function AgentFormCard({
             <p className="text-xs uppercase tracking-[0.22em] text-mist">Agent {index + 1}</p>
             <h3 className="mt-2 font-display text-xl font-semibold text-ink">Cấu hình vai trò thảo luận</h3>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Badge tone={currentProvider || currentModel.trim() ? 'accent' : 'default'}>
-                {currentProvider || currentModel.trim() ? 'Custom routing' : 'Inherit topic default'}
-              </Badge>
               <Badge tone={credential?.isConfigured ? 'success' : 'warning'}>
                 {credential?.isConfigured ? 'Provider ready' : 'Missing key'}
               </Badge>
@@ -199,27 +197,45 @@ export function AgentFormCard({
             className="min-h-[110px]"
             placeholder="Agent này chịu trách nhiệm gì trong cuộc thảo luận?"
           />
-          {agentErrors?.description ? (
-            <p className="text-xs text-danger">{agentErrors.description.message}</p>
-          ) : (
-            <p className="text-xs text-mist">
-              Mô tả nên đủ cụ thể để agent không bị trùng giọng với role khác.
-            </p>
-          )}
+          {agentErrors?.description && <p className="text-xs text-danger">{agentErrors.description.message}</p>}
         </div>
 
         <div className="mt-4 rounded-3xl border border-line/20 bg-black/10 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-mist">Preview Routing</p>
-          <p className="mt-2 text-sm text-ink">
-            Effective provider: <span className="font-medium">{getProviderLabel(effectiveProvider)}</span>
-          </p>
-          <p className="mt-1 text-sm text-ink">
-            Effective model:{' '}
-            <span className="font-medium">{effectiveModel || 'Chưa chọn model cho provider override này'}</span>
-          </p>
-          <p className="mt-2 text-xs text-mist">
-            {getProviderHint(effectiveProvider)} {catalog ? `Catalog hiện có ${catalog.models.length} model.` : ''}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-mist">Preview Routing</p>
+              {!routingPreviewOpen ? (
+                <p className="mt-2 text-sm text-mist">
+                  {getProviderLabel(effectiveProvider)} ·{' '}
+                  {effectiveModel || 'Chưa chọn model cho provider override này'}
+                </p>
+              ) : null}
+            </div>
+            <Button
+              variant="ghost"
+              type="button"
+              className="px-3 py-2 text-xs"
+              aria-expanded={routingPreviewOpen}
+              onClick={() => setRoutingPreviewOpen((current) => !current)}
+            >
+              {routingPreviewOpen ? 'Thu gọn' : 'Mở ra'}
+            </Button>
+          </div>
+
+          {routingPreviewOpen ? (
+            <>
+              <p className="mt-3 text-sm text-ink">
+                Effective provider: <span className="font-medium">{getProviderLabel(effectiveProvider)}</span>
+              </p>
+              <p className="mt-1 text-sm text-ink">
+                Effective model:{' '}
+                <span className="font-medium">{effectiveModel || 'Chưa chọn model cho provider override này'}</span>
+              </p>
+              <p className="mt-2 text-xs text-mist">
+                {getProviderHint(effectiveProvider)} {catalog ? `Catalog hiện có ${catalog.models.length} model.` : ''}
+              </p>
+            </>
+          ) : null}
         </div>
       </Card>
 

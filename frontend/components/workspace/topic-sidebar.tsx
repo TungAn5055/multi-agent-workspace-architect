@@ -19,7 +19,7 @@ export function TopicSidebar({
   onArchive: () => Promise<void>;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 xl:sticky xl:top-5">
       <Card className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -28,10 +28,6 @@ export function TopicSidebar({
           </div>
           <RunStatusBadge status={topic.activeRun?.status ?? null} />
         </div>
-        <p className="mt-4 text-sm leading-6 text-mist">
-          Topic mặc định dùng <span className="font-medium text-ink">{getProviderLabel(topic.sharedProvider)}</span> với model{' '}
-          <span className="font-medium text-ink">{topic.sharedModel}</span> và chỉ bắt đầu chạy sau message đầu tiên của Human.
-        </p>
 
         <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-2xl border border-line/20 bg-white/[0.04] p-3">
@@ -85,7 +81,6 @@ export function TopicSidebar({
                 {agent.provider ? getProviderLabel(agent.provider) : getProviderLabel(topic.sharedProvider)} ·{' '}
                 {agent.model ?? topic.sharedModel}
               </p>
-              <p className="mt-3 text-sm leading-6 text-mist">{agent.description}</p>
             </div>
           ))}
         </div>

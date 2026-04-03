@@ -15,19 +15,44 @@ export function MessageTimeline({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [stickToBottom, setStickToBottom] = useState(true);
 
-  useEffect(() => {
+  function scrollToBottom() {
     const element = containerRef.current;
-    if (!element || !stickToBottom) {
+    if (!element) {
       return;
     }
 
     element.scrollTop = element.scrollHeight;
+  }
+
+  useEffect(() => {
+    if (!stickToBottom) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(scrollToBottom);
+    return () => window.cancelAnimationFrame(frameId);
   }, [messages, stickToBottom]);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (stickToBottom) {
+        scrollToBottom();
+      }
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [stickToBottom]);
 
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[420px] flex-1 flex-col gap-4 overflow-y-auto pr-1"
+      className="chat-scrollbar flex h-full min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2"
       onScroll={(event) => {
         const element = event.currentTarget;
         const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;

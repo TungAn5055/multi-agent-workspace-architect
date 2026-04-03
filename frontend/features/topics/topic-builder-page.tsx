@@ -111,6 +111,7 @@ export function TopicBuilderPage() {
   const watchedAgents = form.watch('agents');
   const previousProviderRef = useRef<ManagedLlmProvider>(watchedProvider);
   const [topicModelPickerOpen, setTopicModelPickerOpen] = useState(false);
+  const [routingPreviewOpen, setRoutingPreviewOpen] = useState(false);
 
   useEffect(() => {
     const previousProvider = previousProviderRef.current;
@@ -209,7 +210,6 @@ export function TopicBuilderPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-mist">Meta topic</p>
-                <h2 className="mt-3 font-display text-3xl font-semibold text-ink">Định nghĩa tuyến model mặc định</h2>
               </div>
             </div>
 
@@ -235,9 +235,6 @@ export function TopicBuilderPage() {
                     </option>
                   ))}
                 </Select>
-                <p className="text-xs text-mist">
-                  Agent không override provider sẽ đi theo lựa chọn này.
-                </p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-ink">Model mặc định của topic</label>
@@ -311,8 +308,97 @@ export function TopicBuilderPage() {
             ))}
           </div>
 
+          {form.formState.errors.agents?.message ? (
+            <p className="rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+              {form.formState.errors.agents.message}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button variant="ghost" href="/topics">
+              Quay lại
+            </Button>
+            <Button
+              type="submit"
+              loading={createTopicMutation.isPending}
+              disabled={!form.formState.isValid}
+            >
+              Tạo topic và vào workspace
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
           <Card className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-mist">Routing Preview</p>
+                {!routingPreviewOpen ? (
+                  <p className="mt-2 text-sm text-mist">
+                    {routingPreview.length} agent đang map route. Mở ra khi cần xem chi tiết từng tuyến.
+                  </p>
+                ) : null}
+              </div>
+              <Button
+                variant="ghost"
+                type="button"
+                className="px-3 py-2 text-xs"
+                aria-expanded={routingPreviewOpen}
+                onClick={() => setRoutingPreviewOpen((current) => !current)}
+              >
+                {routingPreviewOpen ? 'Thu gọn' : 'Mở ra'}
+              </Button>
+            </div>
+
+            {routingPreviewOpen ? (
+              <div className="mt-5 space-y-3">
+                {routingPreview.map((agent) => (
+                  <div key={`${agent.name}-${agent.index}`} className="rounded-2xl border border-line/20 bg-white/[0.04] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-ink">{agent.name}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-mist">{agent.role}</p>
+                      </div>
+                      <Badge tone={agent.isReady ? 'success' : 'warning'}>
+                        {agent.isReady ? 'Provider ready' : 'Missing key'}
+                      </Badge>
+                    </div>
+                    <p className="mt-3 text-sm text-ink">{getProviderLabel(agent.effectiveProvider)}</p>
+                    <p className="mt-1 text-xs text-mist">
+                      {agent.effectiveModel || 'Chưa có model hợp lệ cho tuyến override này'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </Card>
+
+          <Card className="p-6">
+            <p className="text-xs uppercase tracking-[0.22em] text-mist">Provider Status</p>
+            <div className="mt-4 space-y-3">
+              {LLM_PROVIDER_OPTIONS.map((provider) => {
+                const credential = credentialMap.get(provider.value);
+                const catalog = catalogMap.get(provider.value);
+
+                return (
+                  <div key={provider.value} className="rounded-2xl border border-line/20 bg-white/[0.04] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-ink">{provider.label}</p>
+                      <Badge tone={credential?.isConfigured ? 'success' : 'warning'}>
+                        {credential?.isConfigured ? credential.source : 'Missing'}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-xs text-mist">
+                      {catalog ? `${catalog.models.length} model suggestion` : 'Catalog chưa sẵn sàng'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-display text-xl font-semibold text-ink">Thêm agent</p>
                 <p className="mt-2 text-sm text-mist">Dùng các role khác nhau để tránh mọi agent nói cùng một kiểu.</p>
@@ -342,85 +428,6 @@ export function TopicBuilderPage() {
                   <p className="mt-1 text-sm text-mist">{option.hint}</p>
                 </div>
               ))}
-            </div>
-          </Card>
-
-          {form.formState.errors.agents?.message ? (
-            <p className="rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-              {form.formState.errors.agents.message}
-            </p>
-          ) : null}
-
-          <div className="flex flex-wrap justify-end gap-3">
-            <Button variant="ghost" href="/topics">
-              Quay lại
-            </Button>
-            <Button
-              type="submit"
-              loading={createTopicMutation.isPending}
-              disabled={!form.formState.isValid}
-            >
-              Tạo topic và vào workspace
-            </Button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-mist">Routing Preview</p>
-                <p className="mt-3 text-sm leading-6 text-mist">
-                  Đây là tuyến thực sẽ được gửi xuống backend. Agent nào không override sẽ kế thừa provider/model mặc định của topic.
-                </p>
-              </div>
-              <Badge tone={missingProviders.length === 0 ? 'success' : 'warning'}>
-                {missingProviders.length === 0 ? 'Ready' : 'Missing keys'}
-              </Badge>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {routingPreview.map((agent) => (
-                <div key={`${agent.name}-${agent.index}`} className="rounded-2xl border border-line/20 bg-white/[0.04] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-ink">{agent.name}</p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-mist">{agent.role}</p>
-                    </div>
-                    <Badge tone={agent.isReady ? 'success' : 'warning'}>
-                      {agent.isReady ? 'Provider ready' : 'Missing key'}
-                    </Badge>
-                  </div>
-                  <p className="mt-3 text-sm text-ink">{getProviderLabel(agent.effectiveProvider)}</p>
-                  <p className="mt-1 text-xs text-mist">
-                    {agent.effectiveModel || 'Chưa có model hợp lệ cho tuyến override này'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <p className="text-xs uppercase tracking-[0.22em] text-mist">Provider Status</p>
-            <div className="mt-4 space-y-3">
-              {LLM_PROVIDER_OPTIONS.map((provider) => {
-                const credential = credentialMap.get(provider.value);
-                const catalog = catalogMap.get(provider.value);
-
-                return (
-                  <div key={provider.value} className="rounded-2xl border border-line/20 bg-white/[0.04] p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium text-ink">{provider.label}</p>
-                      <Badge tone={credential?.isConfigured ? 'success' : 'warning'}>
-                        {credential?.isConfigured ? credential.source : 'Missing'}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 text-xs text-mist">
-                      {catalog ? `${catalog.models.length} model suggestion` : 'Catalog chưa sẵn sàng'}
-                    </p>
-                  </div>
-                );
-              })}
             </div>
           </Card>
 

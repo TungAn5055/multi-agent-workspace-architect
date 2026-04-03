@@ -12,8 +12,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-body)', 'sans-serif'],
-        display: ['var(--font-display)', 'sans-serif'],
+        sans: ['var(--font-display)', 'Arial', 'sans-serif'],
+        serif: ['var(--font-body)', 'Georgia', 'serif'],
+        display: ['var(--font-display)', 'Arial', 'sans-serif'],
+        body: ['var(--font-body)', 'Georgia', 'serif'],
       },
       boxShadow: {
         panel: '0 20px 60px rgba(4, 9, 14, 0.35)',

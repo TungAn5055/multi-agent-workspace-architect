@@ -5,15 +5,15 @@
 :root {
   --color-ink: 232 240 245;
   --color-line: 99 119 132;
-  --color-shell: 10 17 23;
-  --color-panel: 18 28 37;
+  --color-shell: 38 38 36;
+  --color-panel: 48 48 46;
   --color-mist: 155 176 190;
   --color-accent: 241 108 59;
   --color-success: 74 176 129;
   --color-warning: 220 162 65;
   --color-danger: 224 92 92;
-  --font-display: var(--font-funnel-sans);
-  --font-body: var(--font-funnel-sans);
+  --font-display: "Source Sans 3", Arial, sans-serif;
+  --font-body: "Source Serif 4", Georgia, serif;
 }
 
 * {
@@ -28,11 +28,42 @@ body {
   min-height: 100vh;
   margin: 0;
   color: rgb(var(--color-ink));
-  font-family: var(--font-body), sans-serif;
-  background:
-    radial-gradient(circle at top left, rgba(241, 108, 59, 0.16), transparent 24%),
-    radial-gradient(circle at top right, rgba(92, 146, 224, 0.14), transparent 22%),
-    linear-gradient(180deg, #071018 0%, #0a1117 54%, #081016 100%);
+  font-family: var(--font-body);
+  background: #262624;
+}
+
+.chat-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(108, 108, 104, 0.7) transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(108, 108, 104, 0.7);
+  background-clip: padding-box;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(138, 138, 133, 0.78);
+  background-clip: padding-box;
+}
+
+.chat-scrollbar::-webkit-scrollbar-button,
+.chat-scrollbar::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
 a {

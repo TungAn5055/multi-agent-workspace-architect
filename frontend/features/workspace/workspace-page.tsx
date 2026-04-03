@@ -1,19 +1,18 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { SiteShell } from '@/components/layout/site-shell';
 import { Composer } from '@/components/workspace/composer';
 import { MessageTimeline } from '@/components/workspace/message-timeline';
-import { RunStatusBar } from '@/components/workspace/run-status-bar';
 import { TopicSidebar } from '@/components/workspace/topic-sidebar';
+import { RunStatusBadge } from '@/components/ui/run-status-badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Spinner } from '@/components/ui/spinner';
 import { getErrorMessage, topicKeys, useArchiveTopicMutation, useTopicDetailQuery } from '@/features/topics/topic-queries';
 import {
-  useCancelRunMutation,
   usePostHumanMessageMutation,
   useRunDetailQuery,
   useTopicMessagesQuery,
@@ -37,6 +36,8 @@ export function WorkspacePage({ topicId }: { topicId: string }) {
   const connectionStatus = useWorkspaceStore((state) => state.connectionStatus);
   const banner = useWorkspaceStore((state) => state.banner);
   const setActiveRun = useWorkspaceStore((state) => state.setActiveRun);
+  const chatViewportRef = useRef<HTMLDivElement | null>(null);
+  const [chatViewportHeight, setChatViewportHeight] = useState<number | null>(null);
 
   useTopicStream(topicId);
 
@@ -68,7 +69,6 @@ export function WorkspacePage({ topicId }: { topicId: string }) {
   }, [runDetailQuery.data, setActiveRun]);
 
   const postMessageMutation = usePostHumanMessageMutation(topicId);
-  const cancelRunMutation = useCancelRunMutation(topicId, activeRunId);
   const archiveTopicMutation = useArchiveTopicMutation(topicId);
 
   const mergedMessages = useWorkspaceStore((state) => state.messages);
@@ -88,6 +88,49 @@ export function WorkspacePage({ topicId }: { topicId: string }) {
 
     return ['waiting_human', 'completed', 'failed', 'cancelled'].includes(activeRun.status);
   }, [activeRun, topicQuery.data]);
+
+  const chatBanner =
+    banner ??
+    (connectionStatus === 'reconnecting'
+      ? 'SSE đang reconnect. Timeline sẽ bắt nhịp lại khi kết nối phục hồi.'
+      : currentSpeaker
+        ? `${currentSpeaker.agentName} đang phản hồi trong cuộc thảo luận.`
+        : activeRun?.status === 'waiting_human'
+          ? 'Cuộc thảo luận đang chờ bạn trả lời để tiếp tục.'
+          : mergedMessages.length > 0
+            ? 'Theo dõi timeline ở giữa và nhập phản hồi ở khung cố định bên dưới.'
+            : 'Gửi message đầu tiên để khởi động cuộc thảo luận đa agent.');
+
+  useEffect(() => {
+    let frameId = 0;
+
+    const updateChatViewportHeight = () => {
+      const element = chatViewportRef.current;
+      if (!element) {
+        return;
+      }
+
+      const top = element.getBoundingClientRect().top;
+      const nextHeight = Math.max(window.innerHeight - top, 320);
+      setChatViewportHeight(nextHeight);
+    };
+
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updateChatViewportHeight);
+    };
+
+    scheduleUpdate();
+
+    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('scroll', scheduleUpdate);
+    };
+  }, [chatBanner]);
 
   if (topicQuery.isLoading || messagesQuery.isLoading) {
     return (
@@ -121,76 +164,62 @@ export function WorkspacePage({ topicId }: { topicId: string }) {
   return (
     <SiteShell
       title={topicQuery.data.title}
-      subtitle="Workspace hiển thị đầy đủ timeline nhiều agent, trạng thái run và sidebar cấu hình đội agent của topic hiện tại."
+      subtitle=""
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_360px]">
-        <div className="space-y-4">
-          <RunStatusBar
-            status={activeRun?.status ?? topicQuery.data.activeRun?.status ?? null}
-            currentSpeaker={currentSpeaker}
-            banner={
-              banner ??
-              (connectionStatus === 'reconnecting'
-                ? 'SSE đang reconnect... timeline sẽ bắt nhịp lại khi kết nối phục hồi.'
-                : null)
-            }
-            runDetail={runDetailQuery.data}
-            onStop={async () => {
-              try {
-                await cancelRunMutation.mutateAsync({
-                  reason: 'cancelled_by_user',
-                });
-              } catch (error) {
-                pushToast({
-                  title: 'Dừng run thất bại',
-                  description: getErrorMessage(error),
-                  tone: 'danger',
-                });
-              }
-            }}
-          />
+      <div className="grid min-h-0 gap-6 xl:flex-1 xl:grid-cols-[minmax(0,1.7fr)_360px] xl:items-start">
+        <div className="flex min-h-0 flex-col xl:min-h-0">
+          <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[30px] border border-line/20 bg-[#2f2f2d] shadow-panel xl:h-full">
 
-          <div className="rounded-[30px] border border-line/20 bg-shell/40 p-4 sm:p-5">
-            {mergedMessages.length > 0 ? (
-              <MessageTimeline messages={mergedMessages} highlightedMessageId={highlightedMessageId} />
-            ) : (
-              <EmptyState
-                className="min-h-[420px] flex items-center justify-center"
-                title="Topic chưa có hội thoại"
-                description="Gửi message đầu tiên để khởi động run. Hệ thống sẽ chọn subset agent phù hợp thay vì cho mọi agent nói máy móc."
-              />
-            )}
-          </div>
+            <div
+              ref={chatViewportRef}
+              className="flex min-h-0 flex-col overflow-hidden bg-[#2c2c2a] px-4 py-5 sm:px-6"
+              style={chatViewportHeight ? { height: `${chatViewportHeight}px` } : undefined}
+            >
+              <div className="min-h-0 flex-1">
+                {mergedMessages.length > 0 ? (
+                  <MessageTimeline messages={mergedMessages} highlightedMessageId={highlightedMessageId} />
+                ) : (
+                  <EmptyState
+                    className="flex h-full min-h-[320px] items-center justify-center border-dashed bg-white/[0.02]"
+                    title="Topic chưa có hội thoại"
+                    description="Gửi message đầu tiên để khởi động run. Hệ thống sẽ chọn subset agent phù hợp thay vì cho mọi agent nói máy móc."
+                  />
+                )}
+              </div>
 
-          <Composer
-            archived={topicQuery.data.status === 'archived'}
-            disabled={!canSend || postMessageMutation.isPending}
-            waitingHuman={waitingHuman || activeRun?.status === 'waiting_human'}
-            onSend={async (content) => {
-              try {
-                const result = await postMessageMutation.mutateAsync({
-                  contentMarkdown: content,
-                  clientRequestId: crypto.randomUUID(),
-                });
-                upsertMessage(result.message);
-                setActiveRun({
-                  id: result.run.id,
-                  status: result.run.status,
-                });
-                await Promise.all([
-                  queryClient.invalidateQueries({ queryKey: topicKeys.detail(topicId) }),
-                  queryClient.invalidateQueries({ queryKey: topicKeys.messages(topicId) }),
-                  queryClient.invalidateQueries({ queryKey: topicKeys.run(topicId, result.run.id) }),
-                ]);
-              } catch (error) {
-                pushToast({
-                  title: 'Gửi message thất bại',
-                  description: getErrorMessage(error),
-                  tone: 'danger',
-                });
-              }
-            }}
-          />
+              <div className="mt-4 shrink-0">
+                <Composer
+                  archived={topicQuery.data.status === 'archived'}
+                  disabled={!canSend || postMessageMutation.isPending}
+                  waitingHuman={waitingHuman || activeRun?.status === 'waiting_human'}
+                  onSend={async (content) => {
+                    try {
+                      const result = await postMessageMutation.mutateAsync({
+                        contentMarkdown: content,
+                        clientRequestId: crypto.randomUUID(),
+                      });
+                      upsertMessage(result.message);
+                      setActiveRun({
+                        id: result.run.id,
+                        status: result.run.status,
+                      });
+                      await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: topicKeys.detail(topicId) }),
+                        queryClient.invalidateQueries({ queryKey: topicKeys.messages(topicId) }),
+                        queryClient.invalidateQueries({ queryKey: topicKeys.run(topicId, result.run.id) }),
+                      ]);
+                    } catch (error) {
+                      pushToast({
+                        title: 'Gửi message thất bại',
+                        description: getErrorMessage(error),
+                        tone: 'danger',
+                      });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </section>
         </div>
 
         <TopicSidebar

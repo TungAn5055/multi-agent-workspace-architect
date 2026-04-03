@@ -55,7 +55,7 @@ export function LlmSettingsPage() {
   return (
     <SiteShell
       title="LLM Settings"
-      subtitle="Lưu key cho OpenAI, Claude hoặc OpenRouter. Topic và từng agent sẽ dùng các credential này để chạy thật ở backend."
+      subtitle=""
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_360px]">
         <div className="space-y-6">
@@ -81,14 +81,9 @@ export function LlmSettingsPage() {
                       {credential?.source === 'env' ? <Badge tone="default">Env fallback</Badge> : null}
                       {credential?.source === 'saved' ? <Badge tone="accent">Saved in app</Badge> : null}
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-mist">{getProviderHint(provider.value)}</p>
                   </div>
                   <div className="rounded-3xl border border-line/20 bg-white/[0.04] px-4 py-3 text-right">
-                    <p className="text-xs uppercase tracking-[0.2em] text-mist">Catalog</p>
-                    <p className="mt-2 text-lg font-semibold text-ink">{catalog?.models.length ?? 0}</p>
-                    <p className="text-xs text-mist">
-                      {catalog ? `${catalog.source} source` : 'Đang tải'}
-                    </p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-mist">Catalog : {catalog?.models.length ?? 0}</p>
                   </div>
                 </div>
 
@@ -122,9 +117,7 @@ export function LlmSettingsPage() {
                           : 'Missing'}
                     </p>
                     <p className="mt-2 text-xs text-mist">
-                      {credential?.updatedAt
-                        ? `Cập nhật ${new Date(credential.updatedAt).toLocaleString('vi-VN')}`
-                        : 'Nếu không lưu key ở đây, backend chỉ fallback qua biến môi trường.'}
+                      {credential?.updatedAt &&  `Cập nhật ${new Date(credential.updatedAt).toLocaleString('vi-VN')}`}
                     </p>
                   </div>
                 </div>

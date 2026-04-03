@@ -1,14 +1,24 @@
 import type { Metadata } from 'next';
-import { Funnel_Sans } from 'next/font/google';
+import { Source_Sans_3, Source_Serif_4 } from 'next/font/google';
 
 import '@/app/globals.css';
 
 import { Providers } from '@/app/providers';
 
-const appFont = Funnel_Sans({
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-funnel-sans',
+const displayFont = Source_Sans_3({
+  subsets: ['latin', 'latin-ext', 'vietnamese'],
+  variable: '--font-display',
   weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+
+const bodyFont = Source_Serif_4({
+  subsets: ['latin', 'latin-ext', 'vietnamese'],
+  variable: '--font-body',
+  weight: 'variable',
+  style: ['normal', 'italic'],
+  axes: ['opsz'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -19,7 +29,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
-      <body className={`${appFont.className} ${appFont.variable}`}>
+      <body suppressHydrationWarning className={`${displayFont.variable} ${bodyFont.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>
